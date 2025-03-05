@@ -1,18 +1,28 @@
 import React from 'react';
-import './App.css';
-import LetterBox from './LetterBox';
 import SingleLetterSearchbar from './SingleLetterSearchBar';
+import './App.css';
 
-const pics = ['noose.png', 'upperBody.png', 'upperandlower.png', '1arm.png', 'botharms.png'];
+const pics = [
+  `${process.env.PUBLIC_URL}/noose.png`,
+  `${process.env.PUBLIC_URL}/upperBody.png`,
+  `${process.env.PUBLIC_URL}/upperandlowerbody.png`,
+  `${process.env.PUBLIC_URL}/1arm.png`,
+  `${process.env.PUBLIC_URL}/botharms.png`,
+  `${process.env.PUBLIC_URL}/1leg.png`,
+  `${process.env.PUBLIC_URL}/dead.png`
+];
+
 const words = ["Morehouse", "Spelman", "Basketball", "Table", "Museum", "Excellent", "Fun", "React"];
 
 class HangmanGame extends React.Component {
   state = {
-    wordList: words,
-    curWord: 0,
-    lifeLeft: 5,
+    curWord: '',
+    hiddenWord: '',
+    lifeLeft: 6,
     usedLetters: [],
-    sessionRecord: { wins: 0, losses: 0 },
+    wins: 0,
+    losses: 0,
+    gameOver: false
   };
 
   componentDidMount() {
@@ -20,76 +30,70 @@ class HangmanGame extends React.Component {
   }
 
   startNewGame = () => {
-    this.setState((prevState) => ({
-      curWord: Math.floor(Math.random() * prevState.wordList.length),
-      lifeLeft: 5,
+    const newWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
+    this.setState({
+      curWord: newWord,
+      hiddenWord: '_ '.repeat(newWord.length).trim(),
+      lifeLeft: 6,
       usedLetters: [],
-    }));
-  };
-
-  updateSessionRecord = (didWin) => {
-    this.setState((prevState) => ({
-      sessionRecord: {
-        wins: didWin ? prevState.sessionRecord.wins + 1 : prevState.sessionRecord.wins,
-        losses: didWin ? prevState.sessionRecord.losses : prevState.sessionRecord.losses + 1,
-      },
-    }));
-  };
-
-  handleGuess = (letter) => {
-    if (this.state.usedLetters.includes(letter)) return;
-
-    const word = this.state.wordList[this.state.curWord].toUpperCase();
-    const isCorrect = word.includes(letter);
-
-    this.setState((prevState) => {
-      const updatedUsedLetters = [...prevState.usedLetters, letter];
-
-      if (!isCorrect) {
-        const updatedLife = prevState.lifeLeft - 1;
-        if (updatedLife === 0) {
-          this.updateSessionRecord(false);
-        }
-        return { usedLetters: updatedUsedLetters, lifeLeft: Math.max(0, updatedLife) };
-      }
-
-      const wordComplete = [...word].every((char) => updatedUsedLetters.includes(char) || char === " ");
-      if (wordComplete) {
-        this.updateSessionRecord(true);
-      }
-
-      return { usedLetters: updatedUsedLetters };
+      gameOver: false
     });
   };
 
+  handleLetterGuess = (letter) => {
+    const { curWord, usedLetters, lifeLeft, gameOver } = this.state;
+    if (gameOver || usedLetters.includes(letter)) return;
+
+    const newUsedLetters = [...usedLetters, letter];
+    let updatedHiddenWord = this.state.hiddenWord.split(' ');
+
+    if (curWord.includes(letter)) {
+      curWord.split('').forEach((char, index) => {
+        if (char === letter) {
+          updatedHiddenWord[index] = letter;
+        }
+      });
+    } else {
+      this.setState({ lifeLeft: lifeLeft - 1 });
+    }
+
+    const newHiddenWord = updatedHiddenWord.join(' ');
+
+    this.setState({
+      usedLetters: newUsedLetters,
+      hiddenWord: newHiddenWord
+    });
+
+    if (!newHiddenWord.includes('_')) {
+      this.setState((prevState) => ({ wins: prevState.wins + 1, gameOver: true }));
+    } else if (lifeLeft - 1 === 0) {
+      this.setState((prevState) => ({ losses: prevState.losses + 1, gameOver: true }));
+    }
+  };
+
   render() {
-    const word = this.state.wordList[this.state.curWord].toUpperCase();
-    const gameOver = this.state.lifeLeft <= 0;
-    const wordComplete = [...word].every((char) => this.state.usedLetters.includes(char) || char === " ");
+    const { lifeLeft, usedLetters, hiddenWord, wins, losses, gameOver, curWord } = this.state;
 
     return (
       <div className="hangman-container">
-        <h1 className="game-title">🔥 Journei's Hangman 🔥</h1>
-        <h2 className="life-counter">Lives Left: {this.state.lifeLeft}</h2>
+        <h1 className="game-title">🔥 Journei's React Hangman 🔥</h1>
+        <img src={pics[6 - lifeLeft]} alt="Hangman" className="hangman-image" />
+        <p className="word-display">{hiddenWord}</p>
+        
+        <SingleLetterSearchbar onSearch={this.handleLetterGuess} />
 
-        <img className="hangman-image" src={pics[Math.min(5 - this.state.lifeLeft, pics.length - 1)]} alt="Hangman Stage" />
-
-        <div className="word-container">
-          {word.split("").map((letter, index) => (
-            <LetterBox key={index} letter={letter} isVisible={this.state.usedLetters.includes(letter)} />
-          ))}
+        <div className="used-letters">
+          <h3>Used Letters:</h3>
+          <p>{usedLetters.join(', ') || 'None'}</p>
         </div>
 
-        <p className="used-letters">Used Letters: {this.state.usedLetters.join(", ") || "None"}</p>
+        <div className="scoreboard">
+          <p>🏆 Wins: {wins} | 💀 Losses: {losses}</p>
+        </div>
 
-        {!gameOver && !wordComplete && <SingleLetterSearchbar onSearch={this.handleGuess} />}
+        {gameOver && <p className="game-over">Game Over! The word was: <strong>{curWord}</strong></p>}
 
-        {gameOver && <h3 className="game-over">💀 Game Over! The word was: {word}</h3>}
-        {wordComplete && <h3 className="win-message">🎉 You Won! 🎉</h3>}
-
-        <button className="new-game-button" onClick={this.startNewGame}>New Game</button>
-
-        <h3 className="record">🏆 Wins: {this.state.sessionRecord.wins} | ❌ Losses: {this.state.sessionRecord.losses}</h3>
+        <button onClick={this.startNewGame}>🔄 New Game</button>
       </div>
     );
   }
