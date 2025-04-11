@@ -7,25 +7,24 @@ class SingleLetterSearchbar extends React.Component {
   }
 
   handleInputChange = (event) => {
-    const value = event.target.value.charAt(0).toLowerCase(); // Take first character, convert to lowercase
-    this.setState({ inputValue: value });
+    const value = event.target.value.toUpperCase(); // Convert to uppercase
+    // Only allow A-Z characters
+    if (/^[A-Z]?$/.test(value)) {
+      this.setState({ inputValue: value });
+    }
   };
 
   handleSearchClick = () => {
-    if (this.state.inputValue.length === 1) {
-      if (this.props.onSearch) {
-        this.props.onSearch(this.state.inputValue.toLowerCase());
-      } else {
-        console.error("onSearch prop is missing in SingleLetterSearchbar!");
-      }
+    const { inputValue } = this.state;
+
+    if (inputValue.length === 1) {
+      this.props.onSearch?.(inputValue); // optional chaining
     } else {
-      alert("Please enter a single letter.");
+      alert("Please enter a single letter from A-Z.");
     }
-  
-    // Clear input after search
-    this.setState({ inputValue: "" });
+
+    this.setState({ inputValue: '' });
   };
-  
 
   render() {
     return (
@@ -35,9 +34,12 @@ class SingleLetterSearchbar extends React.Component {
           value={this.state.inputValue}
           onChange={this.handleInputChange}
           maxLength={1}
-          placeholder="Enter a letter"
+          placeholder="💌 Guess a letter"
+          className="letter-input"
         />
-        <button onClick={this.handleSearchClick}>Guess</button>
+        <button onClick={this.handleSearchClick} className="guess-button">
+          💡 Guess
+        </button>
       </div>
     );
   }
