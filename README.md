@@ -46,6 +46,7 @@ react-hangman/
 │── package.json                     # Project dependencies and scripts
 │── package-lock.json                # Package version locking
 │── README.md                        # This file!
+
 ⚙️ How the Game Works
 
 HangmanGame Component: This is the main component where the game is played. It handles the game logic (starting new games, tracking guesses, and displaying the game state).
