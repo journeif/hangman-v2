@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SingleLetterSearchbar from './SingleLetterSearchBar';
 import './App.css';
 
@@ -14,45 +14,49 @@ const pics = [
 
 const words = ["Morehouse", "Spelman", "Basketball", "Table", "Museum", "Excellent", "Fun", "React"];
 
-class HangmanGame extends React.Component {
-  state = {
-    curWord: '',
-    hiddenWord: [],
-    lifeLeft: 6,
-    usedLetters: [],
-    wins: 0,
-    losses: 0,
-    gameOver: false
-  };
+const HangmanGame = () => {
+  const [curWord, setCurWord] = useState('');
+  const [hiddenWord, setHiddenWord] = useState([]);
+  const [lifeLeft, setLifeLeft] = useState(6);
+  const [usedLetters, setUsedLetters] = useState([]);
+  const [wins, setWins] = useState(0);
+  const [losses, setLosses] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
 
-  componentDidMount() {
-    const savedStats = JSON.parse(localStorage.getItem('hangmanStats'));
-    if (savedStats) {
-      this.setState({ wins: savedStats.wins, losses: savedStats.losses });
-    }
-    this.startNewGame();
-  }
+  // Fetch stats from the backend when the component mounts
+  useEffect(() => {
+    fetch('http://localhost:5000/stats')
+      .then(res => res.json())
+      .then(data => {
+        setWins(data.wins);
+        setLosses(data.losses);
+      })
+      .catch(error => console.error('Error fetching stats:', error));
 
-  componentDidUpdate(_, prevState) {
-    if (prevState.wins !== this.state.wins || prevState.losses !== this.state.losses) {
-      const { wins, losses } = this.state;
-      localStorage.setItem('hangmanStats', JSON.stringify({ wins, losses }));
-    }
-  }
+    startNewGame();
+  }, []);
 
-  startNewGame = () => {
-    const newWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
-    this.setState({
-      curWord: newWord,
-      hiddenWord: Array(newWord.length).fill('_'),
-      lifeLeft: 6,
-      usedLetters: [],
-      gameOver: false
+  // Function to update stats on the server
+  const updateStats = (newWins, newLosses) => {
+    fetch('http://localhost:5000/stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ wins: newWins, losses: newLosses })
     });
   };
 
-  handleLetterGuess = (letter) => {
-    const { curWord, usedLetters, lifeLeft, hiddenWord, gameOver } = this.state;
+  const startNewGame = () => {
+    const newWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
+    setCurWord(newWord);
+    setHiddenWord(Array(newWord.length).fill('_'));
+    setLifeLeft(6);
+    setUsedLetters([]);
+    setGameOver(false);
+  };
+
+  const handleLetterGuess = (letter) => {
     if (gameOver || usedLetters.includes(letter)) return;
 
     const newUsedLetters = [...usedLetters, letter];
@@ -67,8 +71,8 @@ class HangmanGame extends React.Component {
     });
 
     const newLifeLeft = correctGuess ? lifeLeft : lifeLeft - 1;
-    let newWins = this.state.wins;
-    let newLosses = this.state.losses;
+    let newWins = wins;
+    let newLosses = losses;
     let isGameOver = false;
 
     if (!updatedHiddenWord.includes('_')) {
@@ -79,51 +83,51 @@ class HangmanGame extends React.Component {
       isGameOver = true;
     }
 
-    this.setState({
-      usedLetters: newUsedLetters,
-      hiddenWord: updatedHiddenWord,
-      lifeLeft: newLifeLeft,
-      wins: newWins,
-      losses: newLosses,
-      gameOver: isGameOver
-    });
+    // Update stats on backend when game ends
+    if (isGameOver) {
+      updateStats(newWins, newLosses);
+    }
+
+    setUsedLetters(newUsedLetters);
+    setHiddenWord(updatedHiddenWord);
+    setLifeLeft(newLifeLeft);
+    setWins(newWins);
+    setLosses(newLosses);
+    setGameOver(isGameOver);
   };
 
-  render() {
-    const { lifeLeft, usedLetters, hiddenWord, wins, losses, gameOver, curWord } = this.state;
-    const totalGames = wins + losses;
-    const winPercentage = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(2) : '0.00';
+  const totalGames = wins + losses;
+  const winPercentage = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(2) : '0.00';
 
-    return (
-      <div className="hangman-container">
-        <div className="game-banner">
-          <h1 className="game-title">🔥 Journei's React Hangman 2.0 🔥</h1>
-          <p className="game-subtitle">WELCOME TO MY WORLD 😈</p>
-        </div>
-
-        <img src={pics[6 - lifeLeft]} alt="Hangman" className="hangman-image" />
-
-        <p className="word-display">{hiddenWord.join(' ')}</p>
-
-        <SingleLetterSearchbar onSearch={this.handleLetterGuess} />
-
-        <div className="used-letters">
-          <h3>Used Letters:</h3>
-          <p>{usedLetters.join(', ') || 'None'}</p>
-        </div>
-
-        <div className="scoreboard">
-          <p>🏆 Wins: {wins} | 💀 Losses: {losses}</p>
-          <p>📈 Win Percentage: {winPercentage}%</p>
-          <p>🧠 Total Games Played: {totalGames}</p>
-        </div>
-
-        {gameOver && <p className="game-over">Game Over! The word was: <strong>{curWord}</strong></p>}
-
-        <button onClick={this.startNewGame}>🔄 New Game</button>
+  return (
+    <div className="hangman-container">
+      <div className="game-banner">
+        <h1 className="game-title">🔥 Journei's React Hangman 2.0 🔥</h1>
+        <p className="game-subtitle">WELCOME TO MY WORLD 😈</p>
       </div>
-    );
-  }
-}
+
+      <img src={pics[6 - lifeLeft]} alt="Hangman" className="hangman-image" />
+
+      <p className="word-display">{hiddenWord.join(' ')}</p>
+
+      <SingleLetterSearchbar onSearch={handleLetterGuess} />
+
+      <div className="used-letters">
+        <h3>Used Letters:</h3>
+        <p>{usedLetters.join(', ') || 'None'}</p>
+      </div>
+
+      <div className="scoreboard">
+        <p>🏆 Wins: {wins} | 💀 Losses: {losses}</p>
+        <p>📈 Win Percentage: {winPercentage}%</p>
+        <p>🧠 Total Games Played: {totalGames}</p>
+      </div>
+
+      {gameOver && <p className="game-over">Game Over! The word was: <strong>{curWord}</strong></p>}
+
+      <button onClick={startNewGame}>🔄 New Game</button>
+    </div>
+  );
+};
 
 export default HangmanGame;
