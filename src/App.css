@@ -46,7 +46,7 @@ body {
   font-size: 2em;
   letter-spacing: 0.3em;
   margin: 20px 0;
-  color: #6a1b9a;
+  color: #c598e2;
 }
 
 .word-container {
@@ -111,3 +111,25 @@ button:hover {
   transform: translateY(-2px);
 }
 
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #121212;
+  color: white;
+}
+
+.hangman-container.dark {
+  background-color: #1c1c1c;
+}
+
+.hangman-container.light {
+  background-color: #f0f0f0;
+}
+
+button {
+  background-color: #6200ea;
+  color: white;
+}
+
+button:hover {
+  background-color: #3700b3;
+}

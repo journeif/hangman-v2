@@ -22,8 +22,10 @@ const HangmanGame = () => {
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [hasName, setHasName] = useState(false);
+  const [darkMode, setDarkMode] = useState(false); // State for dark mode
 
-  // Fetch stats from the backend when the component mounts
   useEffect(() => {
     fetch('http://localhost:5000/stats')
       .then(res => res.json())
@@ -36,7 +38,6 @@ const HangmanGame = () => {
     startNewGame();
   }, []);
 
-  // Function to update stats on the server
   const updateStats = (newWins, newLosses) => {
     fetch('http://localhost:5000/stats', {
       method: 'POST',
@@ -83,7 +84,6 @@ const HangmanGame = () => {
       isGameOver = true;
     }
 
-    // Update stats on backend when game ends
     if (isGameOver) {
       updateStats(newWins, newLosses);
     }
@@ -99,11 +99,32 @@ const HangmanGame = () => {
   const totalGames = wins + losses;
   const winPercentage = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(2) : '0.00';
 
+  if (!hasName) {
+    return (
+      <div className="name-prompt">
+        <h2>What's your name?</h2>
+        <input
+          type="text"
+          value={playerName}
+          onChange={(e) => setPlayerName(e.target.value)}
+          placeholder="Enter your name"
+        />
+        <button onClick={() => setHasName(true)} disabled={!playerName.trim()}>
+          Start Game
+        </button>
+      </div>
+    );
+  }
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
   return (
-    <div className="hangman-container">
+    <div className={`hangman-container ${darkMode ? 'dark' : 'light'}`}>
       <div className="game-banner">
         <h1 className="game-title">🔥 Journei's React Hangman 2.0 🔥</h1>
-        <p className="game-subtitle">WELCOME TO MY WORLD 😈</p>
+        <p className="game-subtitle">Hi {playerName}, welcome to my world 😈</p>
       </div>
 
       <img src={pics[6 - lifeLeft]} alt="Hangman" className="hangman-image" />
@@ -126,6 +147,7 @@ const HangmanGame = () => {
       {gameOver && <p className="game-over">Game Over! The word was: <strong>{curWord}</strong></p>}
 
       <button onClick={startNewGame}>🔄 New Game</button>
+      <button onClick={toggleDarkMode}>🌙 Toggle Dark Mode</button>
     </div>
   );
 };
